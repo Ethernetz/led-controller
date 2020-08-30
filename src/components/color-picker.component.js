@@ -41,7 +41,6 @@ export default class ColorPicker extends Component {
   }
 
   handleTouchMove(e) {
-    console.log("props are", this.props)
     this.props.changeLedCallback({
       ids: this.props.leds.map((led) => led.id),
       hex: this.hexFromCoords(e.touches[0].clientX, e.touches[0].clientX), //TODO get Y
@@ -53,8 +52,7 @@ export default class ColorPicker extends Component {
     });
   }
   handleClosePicker(e) {
-    console.log("closing", this.props.leds.map((led) => led.id))
-    this.props.nameSelectCallback({
+    this.props.closePickerCallback({
       ids: this.props.leds.map((led) => led.id),
     });
   }
