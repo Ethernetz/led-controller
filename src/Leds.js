@@ -2,7 +2,7 @@ export const leds = [
     {
         id: 0,
         name: "Wall Led",
-        // ip: "10.0.0.169",
+        ip: "10.0.0.169",
         hex: "#ff0000",
         override: false
     },

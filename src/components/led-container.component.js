@@ -41,9 +41,13 @@ export default class LedContainer extends Component {
       };
 
       if (this.state.leds[id].ip) {
-        // axios
-        //   .post(`http://${this.state.leds[id].ip}/sendCommand?command=c 0x${data.hex.slice(-6)}`)
-        //   .then((res) => console.log("response was", res.data));
+        axios
+          .post(
+            `http://${
+              this.state.leds[id].ip
+            }/sendCommand?command=c 0x${data.hex.slice(-6)}`
+          )
+          .then((res) => console.log("response was", res.data));
       }
     });
     this.setState({
@@ -51,7 +55,7 @@ export default class LedContainer extends Component {
         ...this.state.leds,
         ...newLeds,
       },
-      colors: this.getUpdatedColors({...this.state.leds, ...newLeds})
+      colors: this.getUpdatedColors({ ...this.state.leds, ...newLeds }),
     });
   }
   onNameSelect(data) {
@@ -60,6 +64,7 @@ export default class LedContainer extends Component {
         ...this.state.leds,
         [data.id]: {
           ...this.state.leds[data.id],
+          colorGroup: null,
           override: true,
         },
       },
@@ -67,24 +72,30 @@ export default class LedContainer extends Component {
   }
   onClosePicker(data) {
     let newLeds = {};
-    let newColorGroup = 0
-      for(let i = 0; i < this.state.colors.length; i++){
-        if(this.state.leds[data.ids[0]].colorGroup !== i){
-          newColorGroup = i;
-          break;
-        }
+    let newHex = "#000000";
+    for (let i = 0; i < this.state.ids.length; i++) {
+      let id = this.state.ids[i];
+      if (
+        !this.state.leds[id].override &&
+        this.state.leds[id].hex !== data.leds[0].hex
+      ) {
+        newHex = this.state.leds[id].hex;
+        break;
       }
-    data.ids.forEach((id) => {
-      newLeds = {
-        ...newLeds,
-        [id]: {
-          ...this.state.leds[id],
-          override: false,
-          colorGroup: newColorGroup,
-          hex: this.state.colors[newColorGroup],
-        },
-      };
-    });
+    }
+    data.leds
+      .map((led) => led.id)
+      .forEach((id) => {
+        newLeds = {
+          ...newLeds,
+          [id]: {
+            ...this.state.leds[id],
+            override: false,
+            colorGroup: null,
+            hex: newHex,
+          },
+        };
+      });
     this.setState(
       this.getUpdatedColorGroups({ ...this.state.leds, ...newLeds })
     );
@@ -119,11 +130,12 @@ export default class LedContainer extends Component {
         overrideData.push([led]);
         return;
       }
+
       colorGroupData[led.colorGroup] != null
         ? colorGroupData[led.colorGroup].push(led)
         : (colorGroupData[led.colorGroup] = [led]);
     });
-    return overrideData.concat(colorGroupData);
+    return overrideData.concat(colorGroupData).filter(Boolean);
   }
 
   getUpdatedColorGroups(leds) {
@@ -142,7 +154,6 @@ export default class LedContainer extends Component {
         },
       };
     }
-
     return {
       leds: {
         ...this.state.leds,
@@ -152,7 +163,7 @@ export default class LedContainer extends Component {
     };
   }
 
-  getUpdatedColors(leds){
+  getUpdatedColors(leds) {
     let newColors = [];
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];
@@ -165,23 +176,22 @@ export default class LedContainer extends Component {
   render() {
     const divStyle = {
       height: "100%",
-      // maxHeight: "100vh",
       width: "100%",
     };
-    let data = this.getPickerData();
-    let pickers = [];
-    for (let i = 0; i < data.length; i++) {
-      pickers.push(
-        <ColorPicker
-          leds={data[i]}
-          changeLedCallback={this.onColorChange}
-          nameSelectCallback={this.onNameSelect}
-          closePickerCallback={this.onClosePicker}
-          height={`${100 / data.length}%`}
-          key={i}
-        ></ColorPicker>
-      );
-    }
-    return <div style={divStyle}>{pickers}</div>;
+    let ledGroups = this.getPickerData();
+    return (
+      <div style={divStyle}>
+        {ledGroups.map((leds, index) => (
+          <ColorPicker
+            key={index}
+            leds={leds}
+            changeLedCallback={this.onColorChange}
+            nameSelectCallback={this.onNameSelect}
+            closePickerCallback={this.onClosePicker}
+            height={`${100 / ledGroups.length}%`}
+          ></ColorPicker>
+        ))}
+      </div>
+    );
   }
 }
