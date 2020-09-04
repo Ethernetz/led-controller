@@ -4,19 +4,20 @@ import ColorPicker from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
 // import {}
 
-type LedMap = {[id: number]: Led};
+type LedMap = { [id: number]: Led };
 
-interface ILedContainerState{
+interface ILedContainerState {
   leds: LedMap;
   ids: number[];
   colors: string[];
 }
 
-interface ILedContainerProps{
-}
+interface ILedContainerProps {}
 
-
-export default class LedContainer extends Component<ILedContainerProps, ILedContainerState> {
+export default class LedContainer extends Component<
+  ILedContainerProps,
+  ILedContainerState
+> {
   constructor(props: ILedContainerProps) {
     super(props);
 
@@ -28,7 +29,7 @@ export default class LedContainer extends Component<ILedContainerProps, ILedCont
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
 
     let leds: LedMap = {};
-    let ids: number[] = []
+    let ids: number[] = [];
     storedLeds.forEach((led) => {
       leds[led.id] = led;
       ids.push(led.id);
@@ -46,17 +47,16 @@ export default class LedContainer extends Component<ILedContainerProps, ILedCont
     leds.forEach((led) => {
       newLeds[led.id] = {
         ...led,
-        hex: hex
-      }
+        hex: hex,
+      };
 
-      if (led.ip) {
-        axios
-          .post(
-            `http://${
-              led.ip
-            }/sendCommand?command=c 0x${hex.slice(-6)}`
-          )
-          .then((res) => console.log("response was", res.data));
+      // if (led.ip) {
+      //   axios
+      //     .post(`http://${led.ip}/sendCommand?command=c 0x${hex.slice(-6)}`)
+      //     .then((res) => console.log("response was", res.data));
+      // }
+      if (led.connection){
+        led.connection.send(hex);
       }
     });
     this.setState({
@@ -86,55 +86,80 @@ export default class LedContainer extends Component<ILedContainerProps, ILedCont
     let newHex = "#000000";
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];
-      if (!this.state.leds[id].override && this.state.leds[id].hex !== leds[0].hex) {
+      if (
+        !this.state.leds[id].override &&
+        this.state.leds[id].hex !== leds[0].hex
+      ) {
         newHex = this.state.leds[id].hex;
         break;
       }
     }
     leds.forEach((led) => {
-        newLeds[led.id] = {
-          ...led,
-          override: false,
-          colorGroup: null,
-          hex: newHex,
-        }
-      });
+      newLeds[led.id] = {
+        ...led,
+        override: false,
+        colorGroup: null,
+        hex: newHex,
+      };
+    });
     this.setState(
       this.getUpdatedColorGroups({ ...this.state.leds, ...newLeds })
     );
   }
 
   componentDidMount() {
-    
     // connection.close()
     storedLeds.forEach((led) => {
       if (!led.ip) return;
 
-      let connection = new WebSocket('ws://' + "10.0.0.28" + ':81/', ['arduino']);
-      connection.onopen = function() {
-        connection.send('Connect ' + new Date());
-        connection.send('#8edfb1')
+      let connection = new WebSocket("ws://" + "10.0.0.28" + ":81/", [
+        "arduino",
+      ]);
+      connection.onopen = () => {
+        connection.send("Connect " + new Date());
+        connection.send("#8edfb1");
+        this.setState({
+          leds: {
+            ...this.state.leds,
+            [led.id]: {
+              ...this.state.leds[led.id],
+              connection: connection,
+            },
+          },
+        });
       };
-      connection.onerror = function(error) {
-        console.log('WebSocket Error ', error);
+      connection.onerror = (error) => {
+        console.log("WebSocket Error ", error);
       };
-      connection.onmessage = function(e) {
-        console.log('Server: ', e.data);
-    };
+      connection.onmessage = (e) => {
+        console.log("Server: ", e.data);
+        if (e.data[0] === "#") {
+          console.log("yo");
+          this.setState(
+            this.getUpdatedColorGroups({
+              ...this.state.leds,
+              [led.id]: {
+                ...this.state.leds[led.id],
+                hex: `#${("000000" + e.data.substring(1)).slice(-6)}`,
+              },
+            })
+          );
+        }
+      };
 
-    // axios.get(`http://${led.ip}/color`).then((res) => {
-    //   if (res.data.length > 0) {
-    //     this.setState(
-    //       this.getUpdatedColorGroups({
-    //         ...this.state.leds,
-    //         [led.id]: {
-    //           ...this.state.leds[led.id],
-    //           hex: `#${("000000" + res.data).slice(-6)}`,
-    //         },
-    //       })
-    //     );
-    //   }
-    // });
+      // axios.get(`http://${led.ip}/color`).then((res) => {
+      //   if (res.data.length > 0) {
+      //     this.setState(
+      //       this.getUpdatedColorGroups({
+      //         ...this.state.leds,
+      //         [led.id]: {
+      //           ...this.state.leds[led.id],
+      //           hex: `#${("000000" + res.data).slice(-6)}`,
+      //         },
+      //       })
+      //     );
+      //   }
+      // });
     });
     this.setState(this.getUpdatedColorGroups(this.state.leds));
   }
@@ -162,13 +187,12 @@ export default class LedContainer extends Component<ILedContainerProps, ILedCont
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];
       let led = leds[id];
-      if (newColors.indexOf(led.hex) === -1) 
-        newColors.push(led.hex);
+      if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
 
       newLeds[id] = {
         ...leds[id],
         colorGroup: newColors.indexOf(led.hex),
-      }
+      };
     }
     return {
       leds: {
