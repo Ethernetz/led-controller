@@ -1,9 +1,23 @@
 import React, { Component } from "react";
 import axios from "axios";
 import ColorPicker from "./color-picker.component";
-import { leds } from "../Leds";
-export default class LedContainer extends Component {
-  constructor(props) {
+import { Led, storedLeds } from "../Leds";
+// import {}
+
+type LedMap = {[id: number]: Led};
+
+interface ILedContainerState{
+  leds: LedMap;
+  ids: number[];
+  colors: string[];
+}
+
+interface ILedContainerProps{
+}
+
+
+export default class LedContainer extends Component<ILedContainerProps, ILedContainerState> {
+  constructor(props: ILedContainerProps) {
     super(props);
 
     this.onColorChange = this.onColorChange.bind(this);
@@ -13,39 +27,34 @@ export default class LedContainer extends Component {
     this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
 
-    let l = {};
-    leds.forEach((led) => {
-      l = {
-        ...l,
-        [led.id]: {
-          ...led,
-        },
-      };
+    let leds: LedMap = {};
+    let ids: number[] = []
+    storedLeds.forEach((led) => {
+      leds[led.id] = led;
+      ids.push(led.id);
     });
+
     this.state = {
-      leds: l,
-      ids: leds.map((led) => led.id),
+      leds: leds,
+      ids: ids,
       colors: [],
     };
   }
 
-  onColorChange(data) {
-    let newLeds = {};
-    data.ids.forEach((id) => {
-      newLeds = {
-        ...newLeds,
-        [id]: {
-          ...this.state.leds[id],
-          hex: data.hex,
-        },
-      };
+  onColorChange(leds: Led[], hex: string) {
+    let newLeds: LedMap = {};
+    leds.forEach((led) => {
+      newLeds[led.id] = {
+        ...led,
+        hex: hex
+      }
 
-      if (this.state.leds[id].ip) {
+      if (led.ip) {
         axios
           .post(
             `http://${
-              this.state.leds[id].ip
-            }/sendCommand?command=c 0x${data.hex.slice(-6)}`
+              led.ip
+            }/sendCommand?command=c 0x${hex.slice(-6)}`
           )
           .then((res) => console.log("response was", res.data));
       }
@@ -58,43 +67,37 @@ export default class LedContainer extends Component {
       colors: this.getUpdatedColors({ ...this.state.leds, ...newLeds }),
     });
   }
-  onNameSelect(data) {
+  onNameSelect(led: Led) {
+    console.log("led is", led);
     this.setState({
       leds: {
         ...this.state.leds,
-        [data.id]: {
-          ...this.state.leds[data.id],
+        [led.id]: {
+          ...this.state.leds[led.id],
           colorGroup: null,
           override: true,
         },
       },
     });
   }
-  onClosePicker(data) {
-    let newLeds = {};
+  onClosePicker(leds: Led[]) {
+    console.log("leds are", leds);
+    let newLeds: LedMap = {};
     let newHex = "#000000";
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];
-      if (
-        !this.state.leds[id].override &&
-        this.state.leds[id].hex !== data.leds[0].hex
-      ) {
+      if (!this.state.leds[id].override && this.state.leds[id].hex !== leds[0].hex) {
         newHex = this.state.leds[id].hex;
         break;
       }
     }
-    data.leds
-      .map((led) => led.id)
-      .forEach((id) => {
-        newLeds = {
-          ...newLeds,
-          [id]: {
-            ...this.state.leds[id],
-            override: false,
-            colorGroup: null,
-            hex: newHex,
-          },
-        };
+    leds.forEach((led) => {
+        newLeds[led.id] = {
+          ...led,
+          override: false,
+          colorGroup: null,
+          hex: newHex,
+        }
       });
     this.setState(
       this.getUpdatedColorGroups({ ...this.state.leds, ...newLeds })
@@ -102,28 +105,43 @@ export default class LedContainer extends Component {
   }
 
   componentDidMount() {
-    leds.forEach((led) => {
+    
+    // connection.close()
+    storedLeds.forEach((led) => {
       if (!led.ip) return;
-      axios.get(`http://${led.ip}/color`).then((res) => {
-        if (res.data.length > 0) {
-          this.setState(
-            this.getUpdatedColorGroups({
-              ...this.state.leds,
-              [led.id]: {
-                ...this.state.leds[led.id],
-                hex: `#${("000000" + res.data).slice(-6)}`,
-              },
-            })
-          );
-        }
-      });
+
+      let connection = new WebSocket('ws://' + "10.0.0.28" + ':81/', ['arduino']);
+      connection.onopen = function() {
+        connection.send('Connect ' + new Date());
+        connection.send('#8edfb1')
+      };
+      connection.onerror = function(error) {
+        console.log('WebSocket Error ', error);
+      };
+      connection.onmessage = function(e) {
+        console.log('Server: ', e.data);
+    };
+
+    // axios.get(`http://${led.ip}/color`).then((res) => {
+    //   if (res.data.length > 0) {
+    //     this.setState(
+    //       this.getUpdatedColorGroups({
+    //         ...this.state.leds,
+    //         [led.id]: {
+    //           ...this.state.leds[led.id],
+    //           hex: `#${("000000" + res.data).slice(-6)}`,
+    //         },
+    //       })
+    //     );
+    //   }
+    // });
     });
     this.setState(this.getUpdatedColorGroups(this.state.leds));
   }
 
-  getPickerData() {
-    let overrideData = [];
-    let colorGroupData = [];
+  getPickerData(): Led[][] {
+    let overrideData: Led[][] = [];
+    let colorGroupData: Led[][] = [];
     this.state.ids.forEach((id) => {
       let led = this.state.leds[id];
       if (led.override) {
@@ -131,39 +149,37 @@ export default class LedContainer extends Component {
         return;
       }
 
-      colorGroupData[led.colorGroup] != null
-        ? colorGroupData[led.colorGroup].push(led)
-        : (colorGroupData[led.colorGroup] = [led]);
+      colorGroupData[led.colorGroup || 0] != null
+        ? colorGroupData[led.colorGroup || 0].push(led)
+        : (colorGroupData[led.colorGroup || 0] = [led]);
     });
     return overrideData.concat(colorGroupData).filter(Boolean);
   }
 
-  getUpdatedColorGroups(leds) {
+  getUpdatedColorGroups(leds: LedMap) {
     let newColors = [];
-    let newLeds = {};
+    let newLeds: LedMap = {};
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];
       let led = leds[id];
-      if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
+      if (newColors.indexOf(led.hex) === -1) 
+        newColors.push(led.hex);
 
-      newLeds = {
-        ...newLeds,
-        [id]: {
-          ...leds[id],
-          colorGroup: newColors.indexOf(led.hex),
-        },
-      };
+      newLeds[id] = {
+        ...leds[id],
+        colorGroup: newColors.indexOf(led.hex),
+      }
     }
     return {
       leds: {
-        ...this.state.leds,
+        ...leds,
         ...newLeds,
       },
       colors: newColors,
     };
   }
 
-  getUpdatedColors(leds) {
+  getUpdatedColors(leds: LedMap): string[] {
     let newColors = [];
     for (let i = 0; i < this.state.ids.length; i++) {
       let id = this.state.ids[i];

@@ -1,14 +1,32 @@
 import React, { Component } from "react";
 import { MdClose } from "react-icons/md";
+import CSS from 'csstype';
+import {Led} from '../Leds'
 
-export default class ColorPicker extends Component {
-  constructor(props) {
+interface IColorPickerState{
+  width: number;
+  height: number;
+  leds?: Led[]
+}
+
+interface IColorPickerProps{
+  leds: Led[];
+  changeLedCallback: (leds: Led[], hex: string)=>void;
+  nameSelectCallback: (led: Led)=>void;
+  closePickerCallback: (leds: Led[])=>void;
+
+  height: string;
+  
+}
+
+export default class ColorPicker extends Component<IColorPickerProps, IColorPickerState> {
+  constructor(props: IColorPickerProps) {
     super(props);
 
     this.state = {
       width: 0,
       height: 0,
-      leds: null,
+      leds: [],
     };
 
     this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -34,48 +52,44 @@ export default class ColorPicker extends Component {
     this.setState({ width: window.innerWidth, height: window.innerHeight });
   }
 
-  handleMouseMove(e) {
+  handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     console.log("mouse move");
-    this.props.changeLedCallback({
-      ids: this.props.leds.map((led) => led.id),
-      hex: this.hexFromCoords(e.screenX, e.screenX), //TODO get Y
-    });
+    this.props.changeLedCallback(
+      this.props.leds,
+      this.hexFromCoords(e.screenX, e.screenX), //TODO get Y
+    );
   }
 
-  handleTouchMove(e) {
+  handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
     console.log("touch move");
-    this.props.changeLedCallback({
-      ids: this.props.leds.map((led) => led.id),
-      hex: this.hexFromCoords(e.touches[0].clientX, e.touches[0].clientX), //TODO get Y
-    });
+    this.props.changeLedCallback(
+      this.props.leds,
+      this.hexFromCoords(e.touches[0].clientX, e.touches[0].clientX), //TODO get Y
+    );
   }
-  handleNameSelect(id) {
-    this.props.nameSelectCallback({
-      id: id,
-    });
+  handleNameSelect(led: Led) {
+    this.props.nameSelectCallback(led);
   }
-  handleClick(e){
+  handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>){
     console.log("mouse click");
-    this.props.changeLedCallback({
-      ids: this.props.leds.map((led) => led.id),
-      hex: this.hexFromCoords(e.screenX, e.screenX), //TODO get Y
-    });
+    this.props.changeLedCallback(
+      this.props.leds, 
+      this.hexFromCoords(e.screenX, e.screenX), //TODO get Y
+    );
   }
-  handleClosePicker(e) {
+  handleClosePicker(e: React.MouseEvent<SVGElement, MouseEvent>) {
     e.stopPropagation();
-    this.props.closePickerCallback({
-      leds: this.props.leds,
-    });
+    this.props.closePickerCallback(this.props.leds);
   }
 
-  hexFromCoords(x, y) {
+  hexFromCoords(x: number, y: number):string {
     var h = (x / this.state.width) * 360;
     var s = 100;
     var l = 50;
     return this.hslToHex(h, s, l);
   }
 
-  hslToHex(h, s, l) {
+  hslToHex(h: number, s: number, l: number): string {
     h /= 360;
     s /= 100;
     l /= 100;
@@ -83,7 +97,7 @@ export default class ColorPicker extends Component {
     if (s === 0) {
       r = g = b = l; // achromatic
     } else {
-      const hue2rgb = (p, q, t) => {
+      const hue2rgb = (p:number, q:number, t:number) => {
         if (t < 0) t += 1;
         if (t > 1) t -= 1;
         if (t < 1 / 6) return p + (q - p) * 6 * t;
@@ -97,7 +111,7 @@ export default class ColorPicker extends Component {
       g = hue2rgb(p, q, h);
       b = hue2rgb(p, q, h - 1 / 3);
     }
-    const toHex = (x) => {
+    const toHex = (x:number) => {
       const hex = Math.round(x * 255).toString(16);
       return hex.length === 1 ? "0" + hex : hex;
     };
@@ -105,14 +119,14 @@ export default class ColorPicker extends Component {
   }
 
   render() {
-    let styles = {
+    let styles: CSS.Properties = {
       backgroundColor: this.props.leds[0]?.hex || "#00f",
-      height: this.props.height,
+      height: `${this.props.height}`,
       width: "100%",
       position: "relative",
     };
 
-    let nameContainerStyles = {
+    let nameContainerStyles: CSS.Properties  = {
       position: "absolute",
       right: 0,
       bottom: 0,
@@ -129,7 +143,7 @@ export default class ColorPicker extends Component {
         <MdClose onClick={this.handleClosePicker} size={70} />
         <div style={nameContainerStyles}>
           {this.props.leds.map((led, index) => (
-            <LedName key={index} id={led.id} text={led.name + led.override + led.colorGroup} onClick={this.handleNameSelect} ></LedName>
+            <LedName key={index} id={led.id} led={led} text={led.name + led.override + led.colorGroup} onClick={this.handleNameSelect} ></LedName>
           ))}
         </div>
       </div>
@@ -137,20 +151,29 @@ export default class ColorPicker extends Component {
   }
 }
 
-export class LedName extends React.Component {
-  handleClick = (e, i) => {
+interface ILedNameProps{
+    onClick: (x:Led)=>void
+    id: number;
+    text: string;
+    led: Led;
+
+}
+export class LedName extends React.Component<ILedNameProps> {
+ 
+
+  handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, i: Led) => {
     e.stopPropagation();  
     this.props.onClick(i);
   }
 
   render() {
-    let styles = {
+    let styles: CSS.Properties = {
       // backgroundColor: "#fff",
       fontSize: "25px",
       fontWeight: "bold",
     };
     return (
-      <div style={styles} onClick={(e) => this.handleClick(e, this.props.id)}>
+      <div style={styles} onClick={(e) => this.handleClick(e, this.props.led)}>
         {this.props.text}
       </div>
     );
