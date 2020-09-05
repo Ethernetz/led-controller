@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import axios from "axios";
 import ColorPicker from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
 // import {}
@@ -49,12 +48,6 @@ export default class LedContainer extends Component<
         ...led,
         hex: hex,
       };
-
-      // if (led.ip) {
-      //   axios
-      //     .post(`http://${led.ip}/sendCommand?command=c 0x${hex.slice(-6)}`)
-      //     .then((res) => console.log("response was", res.data));
-      // }
       if (led.connection){
         led.connection.send(hex);
       }
@@ -112,12 +105,10 @@ export default class LedContainer extends Component<
     storedLeds.forEach((led) => {
       if (!led.ip) return;
 
-      let connection = new WebSocket("ws://" + "10.0.0.28" + ":81/", [
-        "arduino",
-      ]);
+      let connection = new WebSocket("ws://" + led.ip + ":81/", ["arduino",]);
       connection.onopen = () => {
         connection.send("Connect " + new Date());
-        connection.send("#8edfb1");
+        // connection.send("#8edfb1");
         this.setState({
           leds: {
             ...this.state.leds,
@@ -146,20 +137,6 @@ export default class LedContainer extends Component<
           );
         }
       };
-
-      // axios.get(`http://${led.ip}/color`).then((res) => {
-      //   if (res.data.length > 0) {
-      //     this.setState(
-      //       this.getUpdatedColorGroups({
-      //         ...this.state.leds,
-      //         [led.id]: {
-      //           ...this.state.leds[led.id],
-      //           hex: `#${("000000" + res.data).slice(-6)}`,
-      //         },
-      //       })
-      //     );
-      //   }
-      // });
     });
     this.setState(this.getUpdatedColorGroups(this.state.leds));
   }
