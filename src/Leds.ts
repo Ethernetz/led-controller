@@ -5,7 +5,7 @@ export interface Led {
     hex: string;
     override: boolean;
     colorGroup?: number | null;
-    connection?: WebSocket;
+    connection?: WebSocket | null;
 }
 
 export const storedLeds: Led[] = [

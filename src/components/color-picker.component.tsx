@@ -74,7 +74,7 @@ export default class ColorPicker extends Component<IColorPickerProps, IColorPick
     console.log("mouse click");
     this.props.changeLedCallback(
       this.props.leds, 
-      this.hexFromCoords(e.screenX, e.screenX), //TODO get Y
+      this.hexFromCoords(e.clientX, e.screenX), //TODO get Y
     );
   }
   handleClosePicker(e: React.MouseEvent<SVGElement, MouseEvent>) {
@@ -86,6 +86,7 @@ export default class ColorPicker extends Component<IColorPickerProps, IColorPick
     var h = (x / this.state.width) * 360;
     var s = 100;
     var l = 50;
+    console.log(x, this.state.width)
     return this.hslToHex(h, s, l);
   }
 
@@ -143,7 +144,7 @@ export default class ColorPicker extends Component<IColorPickerProps, IColorPick
         <MdClose onClick={this.handleClosePicker} size={70} />
         <div style={nameContainerStyles}>
           {this.props.leds.map((led, index) => (
-            <LedName key={index} id={led.id} led={led} text={led.name + led.override + led.colorGroup} onClick={this.handleNameSelect} ></LedName>
+            <LedName key={index} id={led.id} led={led} text={led.name + (led.connection!=null)} onClick={this.handleNameSelect} ></LedName>
           ))}
         </div>
       </div>

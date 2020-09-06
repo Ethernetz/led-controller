@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import ColorPicker from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
-// import {}
 
 type LedMap = { [id: number]: Led };
 
@@ -27,16 +26,16 @@ export default class LedContainer extends Component<
     this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
 
-    let leds: LedMap = {};
-    let ids: number[] = [];
-    storedLeds.forEach((led) => {
-      leds[led.id] = led;
-      ids.push(led.id);
-    });
+    // let leds: LedMap = {};
+    // let ids: number[] = [];
+    // storedLeds.forEach((led) => {
+    //   leds[led.id] = led;
+    //   ids.push(led.id);
+    // });
 
     this.state = {
-      leds: leds,
-      ids: ids,
+      leds: {},
+      ids: [],
       colors: [],
     };
   }
@@ -48,6 +47,7 @@ export default class LedContainer extends Component<
         ...led,
         hex: hex,
       };
+      console.log("hex", hex);
       if (led.connection){
         led.connection.send(hex);
       }
@@ -101,31 +101,30 @@ export default class LedContainer extends Component<
   }
 
   componentDidMount() {
-    // connection.close()
     storedLeds.forEach((led) => {
       if (!led.ip) return;
-
+      console.log(`Connecting to ${led.name} at ${led.ip}`); 
       let connection = new WebSocket("ws://" + led.ip + ":81/", ["arduino",]);
       connection.onopen = () => {
         connection.send("Connect " + new Date());
-        // connection.send("#8edfb1");
+        console.log(`Connected to ${led.name}`)
         this.setState({
           leds: {
             ...this.state.leds,
             [led.id]: {
-              ...this.state.leds[led.id],
+              ...led,
               connection: connection,
             },
           },
+          ids: [...this.state.ids, led.id]
         });
       };
       connection.onerror = (error) => {
-        console.log("WebSocket Error ", error);
+        console.log(`Error from ${led.name}:`, error);
       };
       connection.onmessage = (e) => {
-        console.log("Server: ", e.data);
+        console.log(`${led.name}: ${e.data}`);
         if (e.data[0] === "#") {
-          console.log("yo");
           this.setState(
             this.getUpdatedColorGroups({
               ...this.state.leds,
@@ -137,6 +136,20 @@ export default class LedContainer extends Component<
           );
         }
       };
+      connection.onclose = (e) => {
+        console.log(`Connected lost from ${led.name}`)
+        this.setState({
+          leds: {
+            ...this.state.leds,
+            [led.id]: {
+              ...this.state.leds[led.id],
+              connection: null,
+              // hex: null,
+            },
+          },
+          ids: [...this.state.ids.filter((id)=> id !== led.id)]
+        });
+      }
     });
     this.setState(this.getUpdatedColorGroups(this.state.leds));
   }
