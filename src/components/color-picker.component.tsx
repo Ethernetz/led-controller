@@ -86,7 +86,6 @@ export default class ColorPicker extends Component<IColorPickerProps, IColorPick
     var h = (x / this.state.width) * 360;
     var s = 100;
     var l = 50;
-    console.log(x, this.state.width)
     return this.hslToHex(h, s, l);
   }
 

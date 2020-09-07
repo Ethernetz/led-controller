@@ -47,7 +47,6 @@ export default class LedContainer extends Component<
         ...led,
         hex: hex,
       };
-      console.log("hex", hex);
       if (led.connection){
         led.connection.send(hex);
       }
@@ -61,7 +60,6 @@ export default class LedContainer extends Component<
     });
   }
   onNameSelect(led: Led) {
-    console.log("led is", led);
     this.setState({
       leds: {
         ...this.state.leds,
@@ -74,7 +72,6 @@ export default class LedContainer extends Component<
     });
   }
   onClosePicker(leds: Led[]) {
-    console.log("leds are", leds);
     let newLeds: LedMap = {};
     let newHex = "#000000";
     for (let i = 0; i < this.state.ids.length; i++) {
@@ -94,6 +91,9 @@ export default class LedContainer extends Component<
         colorGroup: null,
         hex: newHex,
       };
+      if (led.connection){
+        led.connection.send(newHex);
+      }
     });
     this.setState(
       this.getUpdatedColorGroups({ ...this.state.leds, ...newLeds })

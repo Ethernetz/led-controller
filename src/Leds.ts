@@ -11,7 +11,7 @@ export interface Led {
 export const storedLeds: Led[] = [
     {
         id: 0,
-        name: "Wall Led",
+        name: "Wall",
         ip: "10.0.0.28",
         hex: "#ff0000",
         override: false,
@@ -25,12 +25,12 @@ export const storedLeds: Led[] = [
         override: false,
         // colorGroup: null,
     },
-    // {
-    //     id: 2,
-    //     name: "Tube 2",
-    //     // ip: "10.0.0.169",
-    //     hex: "#0000ff",
-    //     override: false,
-    //     // colorGroup: null,
-    // }
+    {
+        id: 2,
+        name: "Tube 2",
+        ip: "10.0.0.110",
+        hex: "#0000ff",
+        override: false,
+        // colorGroup: null,
+    }
 ]
