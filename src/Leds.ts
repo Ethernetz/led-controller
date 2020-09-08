@@ -4,7 +4,8 @@ export interface Led {
     ip?: string;
     hex: string;
     brightness: number; 
-    override: boolean;
+    on: boolean;
+    override?: boolean;
     colorGroup?: number | null;
     connection?: WebSocket | null;
 }
@@ -16,8 +17,7 @@ export const storedLeds: Led[] = [
         ip: "10.0.0.28",
         hex: "#ff0000",
         brightness: 20,
-        override: false,
-        // colorGroup: null,
+        on: true,
     },
     {
         id: 1,
@@ -25,8 +25,7 @@ export const storedLeds: Led[] = [
         ip: "10.0.0.169",
         hex: "#00ff00",
         brightness: 30,
-        override: false,
-        // colorGroup: null,
+        on: false,
     },
     {
         id: 2,
@@ -34,7 +33,6 @@ export const storedLeds: Led[] = [
         ip: "10.0.0.110",
         hex: "#0000ff",
         brightness: 40,
-        override: false,
-        // colorGroup: null,
+        on: true,
     }
 ]

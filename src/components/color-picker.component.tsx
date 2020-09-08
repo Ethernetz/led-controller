@@ -1,43 +1,13 @@
-import React, { Component } from "react";
-import { MdClose } from "react-icons/md";
-import { BsBrightnessLow, BsBrightnessHigh } from "react-icons/bs";
+import React, { Component, ChangeEvent } from "react";
 import CSS from "csstype";
 import { Led } from "../Leds";
-import { withStyles } from "@material-ui/core/styles";
-
 import Grid from "@material-ui/core/Grid";
-import Slider from "@material-ui/core/Slider";
-
-const PrettoSlider = withStyles({
-  root: {
-    color: "#000",
-    height: 8,
-    padding: 0,
-  },
-  thumb: {
-    height: 24,
-    width: 24,
-    backgroundColor: "#fff",
-    border: "2px solid currentColor",
-    marginTop: -8,
-    marginLeft: -12,
-    "&:focus, &:hover, &$active": {
-      boxShadow: "inherit",
-    },
-  },
-  active: {},
-  valueLabel: {
-    left: "calc(-50% + 4px)",
-  },
-  track: {
-    height: 8,
-    borderRadius: 4,
-  },
-  rail: {
-    height: 8,
-    borderRadius: 4,
-  },
-})(Slider);
+// import Slider from "@material-ui/core/Slider";
+import Switch from "@material-ui/core/Switch";
+import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
+import { BsBrightnessHigh } from "react-icons/bs";
+import { shadeBlend } from '../shadeBlend'
+import SettingSlider from './setting-slider'
 
 interface IColorPickerState {
   width: number;
@@ -110,8 +80,8 @@ export default class ColorPicker extends Component<
   handleNameSelect(led: Led) {
     this.props.nameSelectCallback(led);
   }
-  handleBrightnessChange(led: Led, brightness: number){
-    this.props.changeBrightnessCallback(led, brightness)
+  handleBrightnessChange(led: Led, brightness: number) {
+    this.props.changeBrightnessCallback(led, brightness);
   }
 
   handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -176,14 +146,19 @@ export default class ColorPicker extends Component<
       paddingTop: "10px",
       paddingBottom: "10px",
       width: "100%",
-      backgroundColor: "rgba(255, 255, 255, 0.4)",
+      backgroundColor: String(shadeBlend(-0.7, this.props.leds[0].hex)),
+      // "rgba(0, 0, 0, 0.8)",
       borderRadius: "5px",
     };
 
     let closeStyle: CSS.Properties = {
       position: "absolute",
       right: 0,
+      fontSize: "40",
+      display: "block",
     };
+
+    // console.log("background color should be")
 
     return (
       <div
@@ -193,11 +168,7 @@ export default class ColorPicker extends Component<
         onTouchMove={this.handleTouchMove}
         onClick={this.handleClick}
       >
-        <MdClose
-          onClick={this.handleClosePicker}
-          size={40}
-          style={closeStyle}
-        />
+        <CloseRoundedIcon onClick={this.handleClosePicker} style={closeStyle} />
         <div style={nameContainerStyles}>
           {this.props.leds.map((led, index) => (
             <LedName
@@ -238,12 +209,13 @@ export class LedName extends React.Component<ILedNameProps> {
 
   render() {
     let style: CSS.Properties = {
-      padding: "5px 15px 10px 15px"
+      padding: "5px 15px 10px 15px",
     };
 
     let nameStyle: CSS.Properties = {
       fontSize: "20px",
       fontWeight: "bold",
+      color: "white"
     };
     return (
       <div
@@ -257,23 +229,33 @@ export class LedName extends React.Component<ILedNameProps> {
         >
           {this.props.text}
         </div>
-        <Grid container spacing={3} alignItems="center">
-          <Grid item>
-            <BsBrightnessLow size={28} style={{ display: "block" }} />
+        <Grid container spacing={1} alignItems="center">
+        <Grid item>
+            <BsBrightnessHigh size={24} style={{ display: "block" }} color={"white"} />
           </Grid>
           <Grid item xs>
-            <PrettoSlider
+            <SettingSlider
               value={this.props.led.brightness}
               valueLabelDisplay="auto"
               min={0}
               max={100}
               step={5}
-              style={{ display: "block" }}
-              onChange={(e, v) => this.props.onBrightnessChange(this.props.led, Array.isArray(v) ? v[0] : v)}
+              style={{ padding: "0px" }}
+              onChangeCallback={(v: number)=>{
+                this.props.onBrightnessChange(this.props.led, v)
+              }}
+              color={this.props.led.hex}
             />
           </Grid>
           <Grid item>
-            <BsBrightnessHigh size={28} style={{ display: "block" }} />
+            <Switch
+              checked={true}
+              // onChange={handleChange}
+              size="small" 
+              color="default"
+              name="checkedA"
+              inputProps={{ "aria-label": "secondary checkbox" }}
+            />
           </Grid>
         </Grid>
       </div>
