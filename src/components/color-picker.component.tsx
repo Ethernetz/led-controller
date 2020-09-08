@@ -47,7 +47,8 @@ interface IColorPickerState {
 
 interface IColorPickerProps {
   leds: Led[];
-  changeLedCallback: (leds: Led[], hex: string) => void;
+  changeColorCallback: (leds: Led[], hex: string) => void;
+  changeBrightnessCallback: (led: Led, brightness: number) => void;
   nameSelectCallback: (led: Led) => void;
   closePickerCallback: (leds: Led[]) => void;
 
@@ -71,6 +72,7 @@ export default class ColorPicker extends Component<
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleNameSelect = this.handleNameSelect.bind(this);
+    this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
     this.handleClosePicker = this.handleClosePicker.bind(this);
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
   }
@@ -92,7 +94,7 @@ export default class ColorPicker extends Component<
 
   handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     console.log("mouse move");
-    this.props.changeLedCallback(
+    this.props.changeColorCallback(
       this.props.leds,
       this.hexFromCoords(e.screenX, e.screenX) //TODO get Y
     );
@@ -100,7 +102,7 @@ export default class ColorPicker extends Component<
 
   handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
     console.log("touch move");
-    this.props.changeLedCallback(
+    this.props.changeColorCallback(
       this.props.leds,
       this.hexFromCoords(e.touches[0].clientX, e.touches[0].clientX) //TODO get Y
     );
@@ -108,9 +110,13 @@ export default class ColorPicker extends Component<
   handleNameSelect(led: Led) {
     this.props.nameSelectCallback(led);
   }
+  handleBrightnessChange(led: Led, brightness: number){
+    this.props.changeBrightnessCallback(led, brightness)
+  }
+
   handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     console.log("mouse click");
-    this.props.changeLedCallback(
+    this.props.changeColorCallback(
       this.props.leds,
       this.hexFromCoords(e.clientX, e.screenX) //TODO get Y
     );
@@ -199,7 +205,8 @@ export default class ColorPicker extends Component<
               id={led.id}
               led={led}
               text={led.name}
-              onClick={this.handleNameSelect}
+              onNameClick={this.handleNameSelect}
+              onBrightnessChange={this.handleBrightnessChange}
             ></LedName>
           ))}
         </div>
@@ -209,7 +216,8 @@ export default class ColorPicker extends Component<
 }
 
 interface ILedNameProps {
-  onClick: (x: Led) => void;
+  onNameClick: (x: Led) => void;
+  onBrightnessChange: (x: Led, b: number) => void;
   id: number;
   text: string;
   led: Led;
@@ -225,7 +233,7 @@ export class LedName extends React.Component<ILedNameProps> {
 
   handleClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, i: Led) => {
     e.stopPropagation();
-    this.props.onClick(i);
+    this.props.onNameClick(i);
   };
 
   render() {
@@ -255,12 +263,13 @@ export class LedName extends React.Component<ILedNameProps> {
           </Grid>
           <Grid item xs>
             <PrettoSlider
-              defaultValue={30}
-              aria-labelledby="discrete-slider"
+              value={this.props.led.brightness}
               valueLabelDisplay="auto"
-              min={10}
-              max={110}
+              min={0}
+              max={100}
+              step={5}
               style={{ display: "block" }}
+              onChange={(e, v) => this.props.onBrightnessChange(this.props.led, Array.isArray(v) ? v[0] : v)}
             />
           </Grid>
           <Grid item>

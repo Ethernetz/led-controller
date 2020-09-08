@@ -20,18 +20,12 @@ export default class LedContainer extends Component<
     super(props);
 
     this.onColorChange = this.onColorChange.bind(this);
+    this.onBrightnessChange = this.onBrightnessChange.bind(this);
     this.onNameSelect = this.onNameSelect.bind(this);
     this.onClosePicker = this.onClosePicker.bind(this);
     this.getPickerData = this.getPickerData.bind(this);
     this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
-
-    // let leds: LedMap = {};
-    // let ids: number[] = [];
-    // storedLeds.forEach((led) => {
-    //   leds[led.id] = led;
-    //   ids.push(led.id);
-    // });
 
     this.state = {
       leds: {},
@@ -59,6 +53,22 @@ export default class LedContainer extends Component<
       colors: this.getUpdatedColors({ ...this.state.leds, ...newLeds }),
     });
   }
+
+  onBrightnessChange(led: Led, brightness: number) {
+    if (led.connection){
+      led.connection.send("b"+ Math.floor(brightness*230/100));
+    }
+    this.setState({
+      leds: {
+        ...this.state.leds,
+        [led.id]: {
+          ...this.state.leds[led.id],
+          brightness: brightness
+        }
+      }
+    })
+  }
+
   onNameSelect(led: Led) {
     this.setState({
       leds: {
@@ -131,6 +141,17 @@ export default class LedContainer extends Component<
               [led.id]: {
                 ...this.state.leds[led.id],
                 hex: `#${("000000" + e.data.substring(1)).slice(-6)}`,
+              },
+            })
+          );
+        }
+        if (e.data[0] === "b") {
+          this.setState(
+            this.getUpdatedColorGroups({
+              ...this.state.leds,
+              [led.id]: {
+                ...this.state.leds[led.id],
+                brightness: parseInt(e.data.substring(1))*100/230,
               },
             })
           );
@@ -215,7 +236,8 @@ export default class LedContainer extends Component<
           <ColorPicker
             key={index}
             leds={leds}
-            changeLedCallback={this.onColorChange}
+            changeColorCallback={this.onColorChange}
+            changeBrightnessCallback={this.onBrightnessChange}
             nameSelectCallback={this.onNameSelect}
             closePickerCallback={this.onClosePicker}
             height={`${100 / ledGroups.length}%`}
