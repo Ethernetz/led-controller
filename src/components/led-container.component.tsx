@@ -23,6 +23,7 @@ export default class LedContainer extends Component<
     this.onBrightnessChange = this.onBrightnessChange.bind(this);
     this.onNameSelect = this.onNameSelect.bind(this);
     this.onClosePicker = this.onClosePicker.bind(this);
+    this.onPowerSwitch = this.onPowerSwitch.bind(this);
     this.getPickerData = this.getPickerData.bind(this);
     this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
@@ -64,6 +65,20 @@ export default class LedContainer extends Component<
         [led.id]: {
           ...this.state.leds[led.id],
           brightness: brightness
+        }
+      }
+    })
+  }
+  onPowerSwitch(led: Led, on: boolean) {
+    // if (led.connection){
+    //   led.connection.send("b"+ Math.floor(brightness*230/100));
+    // }
+    this.setState({
+      leds: {
+        ...this.state.leds,
+        [led.id]: {
+          ...this.state.leds[led.id],
+          on: on
         }
       }
     })
@@ -240,6 +255,7 @@ export default class LedContainer extends Component<
             changeBrightnessCallback={this.onBrightnessChange}
             nameSelectCallback={this.onNameSelect}
             closePickerCallback={this.onClosePicker}
+            powerSwitchCallback={this.onPowerSwitch}
             height={`${100 / ledGroups.length}%`}
           ></ColorPicker>
         ))}

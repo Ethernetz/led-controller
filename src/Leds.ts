@@ -25,7 +25,7 @@ export const storedLeds: Led[] = [
         ip: "10.0.0.169",
         hex: "#00ff00",
         brightness: 30,
-        on: false,
+        on: true,
     },
     {
         id: 2,

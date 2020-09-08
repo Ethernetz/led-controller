@@ -2,12 +2,12 @@ import React, { Component, ChangeEvent } from "react";
 import CSS from "csstype";
 import { Led } from "../Leds";
 import Grid from "@material-ui/core/Grid";
-// import Slider from "@material-ui/core/Slider";
+import Slider from "@material-ui/core/Slider";
 import Switch from "@material-ui/core/Switch";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 import { BsBrightnessHigh } from "react-icons/bs";
-import { shadeBlend } from '../shadeBlend'
-import SettingSlider from './setting-slider'
+import { shadeBlend } from "../shadeBlend";
+import { MuiThemeProvider, createMuiTheme } from "@material-ui/core";
 
 interface IColorPickerState {
   width: number;
@@ -19,6 +19,7 @@ interface IColorPickerProps {
   leds: Led[];
   changeColorCallback: (leds: Led[], hex: string) => void;
   changeBrightnessCallback: (led: Led, brightness: number) => void;
+  powerSwitchCallback: (led: Led, on: boolean) => void;
   nameSelectCallback: (led: Led) => void;
   closePickerCallback: (leds: Led[]) => void;
 
@@ -43,6 +44,7 @@ export default class ColorPicker extends Component<
     this.handleClick = this.handleClick.bind(this);
     this.handleNameSelect = this.handleNameSelect.bind(this);
     this.handleBrightnessChange = this.handleBrightnessChange.bind(this);
+    this.handlePowerSwitch = this.handlePowerSwitch.bind(this);
     this.handleClosePicker = this.handleClosePicker.bind(this);
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
   }
@@ -82,6 +84,10 @@ export default class ColorPicker extends Component<
   }
   handleBrightnessChange(led: Led, brightness: number) {
     this.props.changeBrightnessCallback(led, brightness);
+  }
+  handlePowerSwitch(led: Led, on: boolean) {
+    // console.log("Yo!", on)
+    this.props.powerSwitchCallback(led, on);
   }
 
   handleClick(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -178,6 +184,7 @@ export default class ColorPicker extends Component<
               text={led.name}
               onNameClick={this.handleNameSelect}
               onBrightnessChange={this.handleBrightnessChange}
+              onPowerSwitch={this.handlePowerSwitch}
             ></LedName>
           ))}
         </div>
@@ -189,6 +196,7 @@ export default class ColorPicker extends Component<
 interface ILedNameProps {
   onNameClick: (x: Led) => void;
   onBrightnessChange: (x: Led, b: number) => void;
+  onPowerSwitch: (x: Led, on: boolean) => void;
   id: number;
   text: string;
   led: Led;
@@ -215,8 +223,34 @@ export class LedName extends React.Component<ILedNameProps> {
     let nameStyle: CSS.Properties = {
       fontSize: "20px",
       fontWeight: "bold",
-      color: "white"
+      color: "white",
     };
+
+    const theme = createMuiTheme({
+      palette: {
+        secondary: {
+          main: this.props.led.hex,
+        },
+      },
+      overrides: {
+        MuiSlider: {
+          thumb: {
+            color: "#ffffff",
+          },
+          track: {
+            color: this.props.led.hex,
+          },
+          rail: {
+            color: "black",
+          },
+        },
+        MuiSwitch: {
+          thumb: {
+            color: "#ffffff",
+          },
+        },
+      },
+    });
     return (
       <div
         style={style}
@@ -230,32 +264,39 @@ export class LedName extends React.Component<ILedNameProps> {
           {this.props.text}
         </div>
         <Grid container spacing={1} alignItems="center">
-        <Grid item>
-            <BsBrightnessHigh size={24} style={{ display: "block" }} color={"white"} />
+          <Grid item>
+            <BsBrightnessHigh
+              size={24}
+              style={{ display: "block" }}
+              color={"white"}
+            />
           </Grid>
           <Grid item xs>
-            <SettingSlider
-              value={this.props.led.brightness}
-              valueLabelDisplay="auto"
-              min={0}
-              max={100}
-              step={5}
-              style={{ padding: "0px" }}
-              onChangeCallback={(v: number)=>{
-                this.props.onBrightnessChange(this.props.led, v)
-              }}
-              color={this.props.led.hex}
-            />
+            <MuiThemeProvider theme={theme}>
+              <Slider
+                value={this.props.led.brightness}
+                valueLabelDisplay="auto"
+                min={0}
+                max={100}
+                step={5}
+                style={{ display: "block", padding: "0px" }}
+                onChange={(e: ChangeEvent<{}>, v: number | number[]) =>
+                  this.props.onBrightnessChange(
+                    this.props.led,
+                    Array.isArray(v) ? v[0] : v
+                  )
+                }
+              />
+            </MuiThemeProvider>
           </Grid>
           <Grid item>
-            <Switch
-              checked={true}
-              // onChange={handleChange}
-              size="small" 
-              color="default"
-              name="checkedA"
-              inputProps={{ "aria-label": "secondary checkbox" }}
-            />
+            <MuiThemeProvider theme={theme}>
+              <Switch
+                checked={this.props.led.on}
+                onChange={(e, on) => this.props.onPowerSwitch(this.props.led, on)}
+                size="small"
+              />
+            </MuiThemeProvider>
           </Grid>
         </Grid>
       </div>
