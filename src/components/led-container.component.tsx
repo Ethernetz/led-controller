@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import ColorPicker from "./color-picker.component";
+import {ColorPicker} from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
 
 type LedMap = { [id: number]: Led };
@@ -8,6 +8,7 @@ interface ILedContainerState {
   leds: LedMap;
   ids: number[];
   colors: string[];
+  width: number;
 }
 
 interface ILedContainerProps {}
@@ -27,11 +28,13 @@ export default class LedContainer extends Component<
     this.getPickerData = this.getPickerData.bind(this);
     this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
     this.getUpdatedColors = this.getUpdatedColors.bind(this);
+    this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
 
     this.state = {
       leds: {},
       ids: [],
       colors: [],
+      width: 100,
     };
   }
 
@@ -42,9 +45,9 @@ export default class LedContainer extends Component<
         ...led,
         hex: hex,
       };
-      if (led.connection){
-        led.connection.send(hex);
-      }
+      // if (led.connection){
+      //   led.connection.send(hex);
+      // }
     });
     this.setState({
       leds: {
@@ -187,7 +190,14 @@ export default class LedContainer extends Component<
         });
       }
     });
+    window.addEventListener("resize", this.updateWindowDimensions);
+    this.updateWindowDimensions();
     this.setState(this.getUpdatedColorGroups(this.state.leds));
+  }
+
+  updateWindowDimensions() {
+    console.log("um...");
+    this.setState({ width: window.innerWidth});
   }
 
   getPickerData(): Led[][] {
@@ -257,6 +267,7 @@ export default class LedContainer extends Component<
             closePickerCallback={this.onClosePicker}
             powerSwitchCallback={this.onPowerSwitch}
             height={`${100 / ledGroups.length}%`}
+            width={this.state.width}
           ></ColorPicker>
         ))}
       </div>
