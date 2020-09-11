@@ -20,9 +20,9 @@ export const LedContainer = () => {
         hex: hex,
       };
       
-      if (wsRefs?.current && wsRefs.current[led.id]) {
-        wsRefs.current[led.id].send(hex);
-      }
+      // if (wsRefs?.current && wsRefs.current[led.id]) {
+      //   wsRefs.current[led.id].send(hex);
+      // }
     });
 
     setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
@@ -40,6 +40,7 @@ export const LedContainer = () => {
       },
     }));
   };
+
   const onPowerSwitch = (led: Led, on: boolean) => {
     setLeds((currentLeds) => ({
       ...currentLeds,
@@ -72,7 +73,6 @@ export const LedContainer = () => {
     }
     let newLeds: LedMap = {};
     ledsToClose.forEach((led) => {
-      console.log("newHex", newHex);
       newLeds[led.id] = {
         ...led,
         override: false,
@@ -110,7 +110,6 @@ export const LedContainer = () => {
       ws.onmessage = (e) => {
         console.log(`${led.name}: ${e.data}`);
         if (e.data[0] === "#") {
-          let hex = `#${("000000" + e.data.substring(1)).slice(-6)}`;
           setLeds((currentLeds) => ({
             ...currentLeds,
             [led.id]: {
@@ -153,24 +152,6 @@ export const LedContainer = () => {
     };
   }, []);
 
-  const getPickerData = (): Led[][] => {
-    let overrideData: Led[][] = [];
-    let colorGroupData: Led[][] = [];
-    ids.forEach((id) => {
-      let led = leds[id];
-      if (!led) return;
-      if (led.override) {
-        overrideData.push([led]);
-        return;
-      }
-
-      colorGroupData[led.colorGroup || 0] != null
-        ? colorGroupData[led.colorGroup || 0].push(led)
-        : (colorGroupData[led.colorGroup || 0] = [led]);
-    });
-    return overrideData.concat(colorGroupData).filter(Boolean);
-  };
-
   useEffect(() => {
     if (updateColorGroups) {
       setUpdateColorGroups(false);
@@ -192,7 +173,25 @@ export const LedContainer = () => {
       console.log("newLeds", newLeds);
       setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
     }
-  }, [leds, updateColorGroups]);
+  }, [leds, ids, updateColorGroups]);
+
+  const getPickerData = (): Led[][] => {
+    let overrideData: Led[][] = [];
+    let colorGroupData: Led[][] = [];
+    ids.forEach((id) => {
+      let led = leds[id];
+      if (!led) return;
+      if (led.override) {
+        overrideData.push([led]);
+        return;
+      }
+
+      colorGroupData[led.colorGroup || 0] != null
+        ? colorGroupData[led.colorGroup || 0].push(led)
+        : (colorGroupData[led.colorGroup || 0] = [led]);
+    });
+    return overrideData.concat(colorGroupData).filter(Boolean);
+  };
 
   const divStyle = {
     height: "100%",

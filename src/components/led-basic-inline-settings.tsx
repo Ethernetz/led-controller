@@ -5,10 +5,9 @@ import Grid from "@material-ui/core/Grid";
 import { BsBrightnessHigh } from "react-icons/bs";
 import { MuiThemeProvider, Slider, Switch, createMuiTheme } from "@material-ui/core";
 type LedBasicInlineSettingProps = {
-//   onNameClick: (x: Led) => void;
-//   onBrightnessChange: (x: Led, b: number) => void;
-//   onPowerSwitch: (x: Led, on: boolean) => void;
-  onBrightnessChange: (x: Led, b: number) => void;
+  onNameClick?: (x: Led) => void;
+  onPowerSwitch?: (x: Led, on: boolean) => void;
+  onBrightnessChange?: (x: Led, b: number) => void;
   led: Led;
 };
 
@@ -38,6 +37,13 @@ export const LedBasicInlineSettings = React.memo((props: LedBasicInlineSettingPr
         {props.led.name + " " + renders.current++}
       </div>
       <Grid container spacing={1} alignItems="center">
+        <Grid item>
+            <BsBrightnessHigh
+              size={24}
+              style={{ display: "block" }}
+              color={"white"}
+            />
+          </Grid>
           <Grid item xs>
             <Slider
                 value={props.led.brightness}
@@ -46,13 +52,22 @@ export const LedBasicInlineSettings = React.memo((props: LedBasicInlineSettingPr
                 max={100}
                 step={5}
                 style={{ display: "block", padding: "0px" }}
-                onChange={(e: ChangeEvent<{}>, v: number | number[]) =>
-                  props.onBrightnessChange(
-                    props.led,
-                    Array.isArray(v) ? v[0] : v
-                  )
-                }
+                // onChange={(e: ChangeEvent<{}>, v: number | number[]) =>
+                //   props.onBrightnessChange(
+                //     props.led,
+                //     Array.isArray(v) ? v[0] : v
+                //   )
+                // }
               />
+          </Grid>
+          <Grid item>
+            {/* <MuiThemeProvider theme={theme}> */}
+            <Switch
+                checked={props.led.on}
+                // onChange={(e, on) => props.onPowerSwitch(props.led, on)}
+                size="small"
+              />
+            {/* </MuiThemeProvider> */}
           </Grid>
         </Grid>
     </div>

@@ -59,7 +59,7 @@ const renders = React.useRef(0);
       <div style={nameStyle} 
       onClick={(e) => props.onNameClick(props.led)}
       >
-        {props.led.name + renders.current++}
+        {props.led.name + " " + renders.current++}
       </div>
       <Grid container spacing={1} alignItems="center">
           <Grid item>
