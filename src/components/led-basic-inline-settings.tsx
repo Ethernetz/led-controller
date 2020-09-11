@@ -4,14 +4,15 @@ import CSS from "csstype";
 import Grid from "@material-ui/core/Grid";
 import { BsBrightnessHigh } from "react-icons/bs";
 import { MuiThemeProvider, Slider, Switch, createMuiTheme } from "@material-ui/core";
-type LedInlineSettingProps = {
-  onNameClick: (x: Led) => void;
+type LedBasicInlineSettingProps = {
+//   onNameClick: (x: Led) => void;
+//   onBrightnessChange: (x: Led, b: number) => void;
+//   onPowerSwitch: (x: Led, on: boolean) => void;
   onBrightnessChange: (x: Led, b: number) => void;
-  onPowerSwitch: (x: Led, on: boolean) => void;
   led: Led;
 };
 
-export const LedInlineSettings = React.memo((props: LedInlineSettingProps) => {
+export const LedBasicInlineSettings = React.memo((props: LedBasicInlineSettingProps) => {
   let stopPropegation = (
     e:
       | React.MouseEvent<HTMLDivElement, MouseEvent>
@@ -19,58 +20,25 @@ export const LedInlineSettings = React.memo((props: LedInlineSettingProps) => {
   ) => {
     e.stopPropagation();
   };
-  const style: CSS.Properties = {
+  let style: CSS.Properties = {
     padding: "5px 15px 10px 15px",
   };
-  const nameStyle: CSS.Properties = {
+  let nameStyle: CSS.Properties = {
     fontSize: "20px",
     fontWeight: "bold",
     color: "white",
   };
-  const theme = createMuiTheme({
-      palette: {
-        secondary: {
-          main: props.led.hex,
-        },
-      },
-      overrides: {
-        MuiSlider: {
-          thumb: {
-            color: "#ffffff",
-          },
-          track: {
-            color: props.led.hex,
-          },
-          rail: {
-            color: "black",
-          },
-        },
-        MuiSwitch: {
-          thumb: {
-            color: "#ffffff",
-          },
-        },
-      },
-    });
-const renders = React.useRef(0);
-
+  const renders = React.useRef(0);
+  
   return (
     <div style={style} onClick={stopPropegation} onTouchMove={stopPropegation}>
       <div style={nameStyle} 
-      onClick={(e) => props.onNameClick(props.led)}
+    //   onClick={(e) => props.onNameClick(props.led)}
       >
-        {props.led.name + renders.current++}
+        {props.led.name + " " + renders.current++}
       </div>
       <Grid container spacing={1} alignItems="center">
-          <Grid item>
-            <BsBrightnessHigh
-              size={24}
-              style={{ display: "block" }}
-              color={"white"}
-            />
-          </Grid>
           <Grid item xs>
-            <MuiThemeProvider theme={theme}>
             <Slider
                 value={props.led.brightness}
                 valueLabelDisplay="auto"
@@ -85,16 +53,6 @@ const renders = React.useRef(0);
                   )
                 }
               />
-            </MuiThemeProvider>
-          </Grid>
-          <Grid item>
-            <MuiThemeProvider theme={theme}>
-            <Switch
-                checked={props.led.on}
-                onChange={(e, on) => props.onPowerSwitch(props.led, on)}
-                size="small"
-              />
-            </MuiThemeProvider>
           </Grid>
         </Grid>
     </div>

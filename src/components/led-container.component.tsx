@@ -1,210 +1,164 @@
-import React, { Component } from "react";
-import {ColorPicker} from "./color-picker.component";
+import React, { useState, useEffect, useRef } from "react";
+import { ColorPicker } from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
+import { useWindowWidth } from "./useWindowWidth";
 
 type LedMap = { [id: number]: Led };
+export const LedContainer = () => {
+  const [leds, setLeds] = useState<LedMap>({});
+  const [ids, setIds] = useState<number[]>([]);
+  const [updateColorGroups, setUpdateColorGroups] = useState(false);
+  const width = useWindowWidth();
 
-interface ILedContainerState {
-  leds: LedMap;
-  ids: number[];
-  colors: string[];
-  width: number;
-}
+  const wsRefs = useRef<{ [id: number]: WebSocket }>();
 
-interface ILedContainerProps {}
-
-export default class LedContainer extends Component<
-  ILedContainerProps,
-  ILedContainerState
-> {
-  constructor(props: ILedContainerProps) {
-    super(props);
-
-    this.onColorChange = this.onColorChange.bind(this);
-    this.onBrightnessChange = this.onBrightnessChange.bind(this);
-    this.onNameSelect = this.onNameSelect.bind(this);
-    this.onClosePicker = this.onClosePicker.bind(this);
-    this.onPowerSwitch = this.onPowerSwitch.bind(this);
-    this.getPickerData = this.getPickerData.bind(this);
-    this.getUpdatedColorGroups = this.getUpdatedColorGroups.bind(this);
-    this.getUpdatedColors = this.getUpdatedColors.bind(this);
-    this.updateWindowDimensions = this.updateWindowDimensions.bind(this);
-
-    this.state = {
-      leds: {},
-      ids: [],
-      colors: [],
-      width: 100,
-    };
-  }
-
-  onColorChange(leds: Led[], hex: string) {
+  const onColorChange = (leds: Led[], hex: string) => {
     let newLeds: LedMap = {};
     leds.forEach((led) => {
       newLeds[led.id] = {
         ...led,
         hex: hex,
       };
-      // if (led.connection){
-      //   led.connection.send(hex);
-      // }
+      
+      if (wsRefs?.current && wsRefs.current[led.id]) {
+        wsRefs.current[led.id].send(hex);
+      }
     });
-    this.setState({
-      leds: {
-        ...this.state.leds,
-        ...newLeds,
-      },
-      colors: this.getUpdatedColors({ ...this.state.leds, ...newLeds }),
-    });
-  }
 
-  onBrightnessChange(led: Led, brightness: number) {
-    if (led.connection){
-      led.connection.send("b"+ Math.floor(brightness*230/100));
+    setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
+  };
+
+  const onBrightnessChange = (led: Led, brightness: number) => {
+    if (wsRefs?.current && wsRefs.current[led.id]) {
+      wsRefs.current[led.id].send("b" + Math.floor((brightness * 230) / 100));
     }
-    this.setState({
-      leds: {
-        ...this.state.leds,
-        [led.id]: {
-          ...this.state.leds[led.id],
-          brightness: brightness
-        }
-      }
-    })
-  }
-  onPowerSwitch(led: Led, on: boolean) {
-    // if (led.connection){
-    //   led.connection.send("b"+ Math.floor(brightness*230/100));
-    // }
-    this.setState({
-      leds: {
-        ...this.state.leds,
-        [led.id]: {
-          ...this.state.leds[led.id],
-          on: on
-        }
-      }
-    })
-  }
-
-  onNameSelect(led: Led) {
-    this.setState({
-      leds: {
-        ...this.state.leds,
-        [led.id]: {
-          ...this.state.leds[led.id],
-          colorGroup: null,
-          override: true,
-        },
+    setLeds((currentLeds) => ({
+      ...currentLeds,
+      [led.id]: {
+        ...currentLeds[led.id],
+        brightness: brightness,
       },
-    });
-  }
-  onClosePicker(leds: Led[]) {
-    let newLeds: LedMap = {};
-    let newHex = "#000000";
-    for (let i = 0; i < this.state.ids.length; i++) {
-      let id = this.state.ids[i];
-      if (
-        !this.state.leds[id].override &&
-        this.state.leds[id].hex !== leds[0].hex
-      ) {
-        newHex = this.state.leds[id].hex;
+    }));
+  };
+  const onPowerSwitch = (led: Led, on: boolean) => {
+    setLeds((currentLeds) => ({
+      ...currentLeds,
+      [led.id]: {
+        ...currentLeds[led.id],
+        on: on,
+      },
+    }));
+  };
+
+  const onNameSelect = (led: Led) => {
+    setLeds((currentLeds) => ({
+      ...currentLeds,
+      [led.id]: {
+        ...currentLeds[led.id],
+        colorGroup: null,
+        override: true,
+      },
+    }));
+  };
+  const onClosePicker = (ledsToClose: Led[]) => {
+    let currHex = ledsToClose[0].hex;
+    let newHex = currHex;
+    for (let i = 0; i < ids.length; i++) {
+      let id = ids[i];
+      if (!leds[id].override && leds[id].hex !== currHex) {
+        newHex = leds[id].hex;
         break;
       }
     }
-    leds.forEach((led) => {
+    let newLeds: LedMap = {};
+    ledsToClose.forEach((led) => {
+      console.log("newHex", newHex);
       newLeds[led.id] = {
         ...led,
         override: false,
         colorGroup: null,
         hex: newHex,
       };
-      if (led.connection){
-        led.connection.send(newHex);
+      if (wsRefs?.current && wsRefs.current[led.id]) {
+        wsRefs.current[led.id].send(newHex);
       }
     });
-    this.setState(
-      this.getUpdatedColorGroups({ ...this.state.leds, ...newLeds })
-    );
-  }
+    setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
+    setUpdateColorGroups(true);
+  };
 
-  componentDidMount() {
+  useEffect(() => {
+    console.log("mounting!!!");
     storedLeds.forEach((led) => {
-      if (!led.ip) return;
-      console.log(`Connecting to ${led.name} at ${led.ip}`); 
-      let connection = new WebSocket("ws://" + led.ip + ":81/", ["arduino",]);
-      connection.onopen = () => {
-        connection.send("Connect " + new Date());
-        console.log(`Connected to ${led.name}`)
-        this.setState({
-          leds: {
-            ...this.state.leds,
-            [led.id]: {
-              ...led,
-              connection: connection,
-            },
+      if (wsRefs?.current && wsRefs.current[led.id]) return;
+      wsRefs.current = {
+        ...wsRefs.current,
+        [led.id]: new WebSocket("ws://" + led.ip + ":81/", ["arduino"]),
+      };
+      let ws = wsRefs.current[led.id];
+      ws.onopen = () => {
+        ws.send("Connect " + new Date());
+        console.log(`Connected to ${led.name}`);
+        setLeds((currentLeds) => ({
+          ...currentLeds,
+          [led.id]: {
+            ...led,
           },
-          ids: [...this.state.ids, led.id]
-        });
+        }));
+        setIds((currentIds) => currentIds.concat(led.id));
       };
-      connection.onerror = (error) => {
-        console.log(`Error from ${led.name}:`, error);
-      };
-      connection.onmessage = (e) => {
+      ws.onmessage = (e) => {
         console.log(`${led.name}: ${e.data}`);
         if (e.data[0] === "#") {
-          this.setState(
-            this.getUpdatedColorGroups({
-              ...this.state.leds,
-              [led.id]: {
-                ...this.state.leds[led.id],
-                hex: `#${("000000" + e.data.substring(1)).slice(-6)}`,
-              },
-            })
-          );
+          let hex = `#${("000000" + e.data.substring(1)).slice(-6)}`;
+          setLeds((currentLeds) => ({
+            ...currentLeds,
+            [led.id]: {
+              ...currentLeds[led.id],
+              hex: `#${("000000" + e.data.substring(1)).slice(-6)}`,
+            },
+          }));
+          setUpdateColorGroups(true);
         }
         if (e.data[0] === "b") {
-          this.setState(
-            this.getUpdatedColorGroups({
-              ...this.state.leds,
-              [led.id]: {
-                ...this.state.leds[led.id],
-                brightness: parseInt(e.data.substring(1))*100/230,
-              },
-            })
-          );
+          setLeds((currentLeds) => ({
+            ...currentLeds,
+            [led.id]: {
+              ...currentLeds[led.id],
+              brightness: (parseInt(e.data.substring(1)) * 100) / 230,
+            },
+          }));
         }
       };
-      connection.onclose = (e) => {
-        console.log(`Connected lost from ${led.name}`)
-        this.setState({
-          leds: {
-            ...this.state.leds,
-            [led.id]: {
-              ...this.state.leds[led.id],
-              connection: null,
-              // hex: null,
-            },
+      ws.onerror = (error) => {
+        console.log(`Error from ${led.name}:`, error);
+      };
+      ws.onclose = () => {
+        console.log(`Connection lost from ${led.name}`);
+        setLeds((currentLeds) => ({
+          ...currentLeds,
+          [led.id]: {
+            ...currentLeds[led.id],
           },
-          ids: [...this.state.ids.filter((id)=> id !== led.id)]
-        });
-      }
+        }));
+        setIds((currentIds) => currentIds.filter((id) => id !== led.id));
+      };
     });
-    window.addEventListener("resize", this.updateWindowDimensions);
-    this.updateWindowDimensions();
-    this.setState(this.getUpdatedColorGroups(this.state.leds));
-  }
+    return () => {
+      console.log("about to unmount!");
+      storedLeds.forEach((led) => {
+        if (wsRefs?.current && wsRefs?.current[led.id])
+          wsRefs.current[led.id].close();
+      });
+    };
+  }, []);
 
-  updateWindowDimensions() {
-    console.log("um...");
-    this.setState({ width: window.innerWidth});
-  }
-
-  getPickerData(): Led[][] {
+  const getPickerData = (): Led[][] => {
     let overrideData: Led[][] = [];
     let colorGroupData: Led[][] = [];
-    this.state.ids.forEach((id) => {
-      let led = this.state.leds[id];
+    ids.forEach((id) => {
+      let led = leds[id];
+      if (!led) return;
       if (led.override) {
         overrideData.push([led]);
         return;
@@ -215,62 +169,51 @@ export default class LedContainer extends Component<
         : (colorGroupData[led.colorGroup || 0] = [led]);
     });
     return overrideData.concat(colorGroupData).filter(Boolean);
-  }
+  };
 
-  getUpdatedColorGroups(leds: LedMap) {
-    let newColors = [];
-    let newLeds: LedMap = {};
-    for (let i = 0; i < this.state.ids.length; i++) {
-      let id = this.state.ids[i];
-      let led = leds[id];
-      if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
+  useEffect(() => {
+    if (updateColorGroups) {
+      setUpdateColorGroups(false);
 
-      newLeds[id] = {
-        ...leds[id],
-        colorGroup: newColors.indexOf(led.hex),
-      };
+      let newColors: string[] = [];
+      for (let i = 0; i < ids.length; i++) {
+        let led = leds[ids[i]];
+        if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
+      }
+
+      let newLeds: LedMap = {};
+      for (let i = 0; i < ids.length; i++) {
+        let led = leds[ids[i]];
+        newLeds[ids[i]] = {
+          ...led,
+          colorGroup: newColors.indexOf(led.hex),
+        };
+      }
+      console.log("newLeds", newLeds);
+      setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
     }
-    return {
-      leds: {
-        ...leds,
-        ...newLeds,
-      },
-      colors: newColors,
-    };
-  }
+  }, [leds, updateColorGroups]);
 
-  getUpdatedColors(leds: LedMap): string[] {
-    let newColors = [];
-    for (let i = 0; i < this.state.ids.length; i++) {
-      let id = this.state.ids[i];
-      let led = leds[id];
-      if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
-    }
-    return newColors;
-  }
-
-  render() {
-    const divStyle = {
-      height: "100%",
-      width: "100%",
-    };
-    let ledGroups = this.getPickerData();
-    return (
-      <div style={divStyle}>
-        {ledGroups.map((leds, index) => (
-          <ColorPicker
-            key={index}
-            leds={leds}
-            changeColorCallback={this.onColorChange}
-            changeBrightnessCallback={this.onBrightnessChange}
-            nameSelectCallback={this.onNameSelect}
-            closePickerCallback={this.onClosePicker}
-            powerSwitchCallback={this.onPowerSwitch}
-            height={`${100 / ledGroups.length}%`}
-            width={this.state.width}
-          ></ColorPicker>
-        ))}
-      </div>
-    );
-  }
-}
+  const divStyle = {
+    height: "100%",
+    width: "100%",
+  };
+  let ledGroups = getPickerData();
+  return (
+    <div style={divStyle}>
+      {ledGroups.map((leds, index) => (
+        <ColorPicker
+          key={index}
+          leds={leds}
+          changeColorCallback={onColorChange}
+          changeBrightnessCallback={onBrightnessChange}
+          nameSelectCallback={onNameSelect}
+          closePickerCallback={onClosePicker}
+          powerSwitchCallback={onPowerSwitch}
+          height={`${100 / ledGroups.length}%`}
+          width={width}
+        ></ColorPicker>
+      ))}
+    </div>
+  );
+};

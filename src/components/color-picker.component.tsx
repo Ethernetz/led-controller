@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useCallback } from "react";
 import CSS from "csstype";
 import { Led } from "../Leds";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
 import { shadeBlend } from "../shadeBlend";
 import { LedInlineSettings } from "./led-inline-settings";
+import { LedBasicInlineSettings } from "./led-basic-inline-settings";
 import {hexFromCoords} from "../colorConverters"
 
 interface IColorPickerProps {
@@ -17,7 +18,7 @@ interface IColorPickerProps {
   height: string;
 }
 
-export const ColorPicker = (props: IColorPickerProps) => {
+export const ColorPicker = React.memo((props: IColorPickerProps) => {
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     console.log("mouse move");
@@ -37,9 +38,18 @@ export const ColorPicker = (props: IColorPickerProps) => {
   const handleNameSelect = (led: Led) =>  {
     props.nameSelectCallback(led);
   }
+
+  // const test = React.useCallback(()=> {}, [leds])
+
   const handleBrightnessChange = (led: Led, brightness: number) => {
     props.changeBrightnessCallback(led, brightness);
   }
+
+  const handleBrightnessChangeUseCallback = useCallback((led: Led, brightness: number) => {
+    props.changeBrightnessCallback(led, brightness);
+  }, [])
+
+
   const handlePowerSwitch = (led: Led, on: boolean) => {
     props.powerSwitchCallback(led, on);
   }
@@ -92,15 +102,20 @@ export const ColorPicker = (props: IColorPickerProps) => {
         <CloseRoundedIcon onClick={handleClosePicker} style={closeStyle} />
         <div style={nameContainerStyles}>
           {props.leds.map((led, index) => (
-            <LedInlineSettings
-            key={index}
-            led={led}
-            onNameClick={handleNameSelect}
-            onBrightnessChange={handleBrightnessChange}
-            onPowerSwitch={handlePowerSwitch}
-          ></LedInlineSettings>
+          //   <LedInlineSettings
+          //   key={index}
+          //   led={led}
+          //   onNameClick={handleNameSelect}
+          //   onBrightnessChange={handleBrightnessChange}
+          //   onPowerSwitch={handlePowerSwitch}
+          // ></LedInlineSettings>
+          <LedBasicInlineSettings
+          key={index}
+          led={led}
+          onBrightnessChange={handleBrightnessChangeUseCallback}
+          ></LedBasicInlineSettings>
           ))}
         </div>
       </div>
     );
-}
+})
