@@ -3,6 +3,21 @@ import { ColorPicker } from "./color-picker.component";
 import { Led, storedLeds } from "../Leds";
 import { useWindowWidth } from "./useWindowWidth";
 
+// function reducer(state: any, action: any) {
+//   switch(action.type){
+//     case "add-led":
+//       return {
+//         leds: {...state.leds, [action.led.id]: action.led}
+//       }
+//     case "set-brightness":
+//         let newLeds = {...state.leds}
+
+//         return{
+//           leds: state.leds.map((led, i) => i === action)
+//         }
+//   }
+// }
+
 type LedMap = { [id: number]: Led };
 export const LedContainer = () => {
   const [leds, setLeds] = useState<LedMap>({});
@@ -20,9 +35,9 @@ export const LedContainer = () => {
         hex: hex,
       };
       
-      // if (wsRefs?.current && wsRefs.current[led.id]) {
-      //   wsRefs.current[led.id].send(hex);
-      // }
+      if (wsRefs?.current && wsRefs.current[led.id]) {
+        wsRefs.current[led.id].send(hex);
+      }
     });
 
     setLeds((currentLeds) => ({ ...currentLeds, ...newLeds }));
