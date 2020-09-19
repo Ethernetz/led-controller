@@ -40,14 +40,14 @@ const useStyles = makeStyles({
 });
 
 const useSliderStyles = makeStyles({
-  root:{
+  root: {
     display: "block",
     padding: "0px",
   },
-  thumb:{
-    color: "#fff",
+  thumb: {
+    color:(props: LedInlineSettingProps) => props.led.hex,
   },
-  rail:{
+  rail: {
     color: "#000",
   },
   track: {
@@ -60,11 +60,11 @@ const useSwitchStyles = makeStyles({
     color: "#fff",
     // color:  (props: LedInlineSettingProps) => props.led.hex,
     "&$checked": {
-      color:  "#fff",
+      color: "#fff",
       // color:  (props: LedInlineSettingProps) => props.led.hex,
     },
     "&$checked + $track": {
-      backgroundColor:  "#000",
+      backgroundColor: "#000",
       // backgroundColor: (props: LedInlineSettingProps) => props.led.hex,
     },
   },
@@ -82,7 +82,6 @@ export const LedInlineSettings = React.memo(
       e.stopPropagation();
     };
 
-    const renders = React.useRef(0);
     const classes = useStyles(props);
     const sliderClasses = useSliderStyles(props);
     const switchClasses = useSwitchStyles(props);
@@ -94,9 +93,9 @@ export const LedInlineSettings = React.memo(
       >
         <div
           className={classes.name}
-            onClick={(e) => props.onNameClick(props.led)}
+          onClick={(e) => props.onNameClick(props.led)}
         >
-          {props.led.name + " " + renders.current++ + "ok"}
+          {props.led.name}
         </div>
         <div className={classes.flexbox}>
           <div className={classes.item}>
@@ -122,7 +121,7 @@ export const LedInlineSettings = React.memo(
           </div>
           <div className={classes.item}>
             <Switch
-              checked={ props.led.on }
+              checked={props.led.on}
               classes={{
                 switchBase: switchClasses.switchBase,
                 track: switchClasses.track,
