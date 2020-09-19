@@ -96,7 +96,7 @@ export const LedInlineSettings = React.memo(
           className={classes.name}
             onClick={(e) => props.onNameClick(props.led)}
         >
-          {props.led.name + " " + renders.current++}
+          {props.led.name + " " + renders.current++ + "ok"}
         </div>
         <div className={classes.flexbox}>
           <div className={classes.item}>

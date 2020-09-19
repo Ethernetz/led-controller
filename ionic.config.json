@@ -1,0 +1,7 @@
+{
+  "name": "myleds",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
