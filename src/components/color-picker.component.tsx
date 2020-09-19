@@ -1,9 +1,9 @@
 import React from "react";
 import CSS from "csstype";
-import { Led } from "../Leds";
+import { Led } from "../common/Leds";
 import CloseRoundedIcon from "@material-ui/icons/CloseRounded";
-import { shadeBlend } from "../shadeBlend";
-import { hexFromCoords } from "../colorConverters";
+import { shadeBlend } from "../common/shadeBlend";
+import { hexFromCoords } from "../common/colorConverters";
 import { LedInlineSettings } from "./led-inline-settings";
 
 interface ColorPickerProps {

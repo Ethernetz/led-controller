@@ -1,5 +1,5 @@
 import React, { ChangeEvent } from "react"; // we need this to make JSX compile
-import { Led } from "../Leds";
+import { Led } from "../common/Leds";
 import { BsBrightnessHigh } from "react-icons/bs";
 import {
   Slider,

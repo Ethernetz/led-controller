@@ -1,17 +1,29 @@
 import React, { useState, useEffect, useRef, useReducer } from "react";
 import { ColorPicker } from "./color-picker.component";
-import { Led, storedLeds } from "../Leds";
-import { useWindowWidth } from "./useWindowWidth";
+import { Led, storedLeds } from "../common/Leds";
+import { useWindowWidth } from "../common/useWindowWidth";
+import { Spinner } from "./spinner.component";
 
 type Action =
   | { type: "add-led"; led: Led }
-  | { type: "set-property"; key: keyof Led; value: any; leds: Led[] }
-  | { type: "set-properties"; payload: Partial<Led>; leds: Led[] }
+  | {
+      type: "set-property";
+      key: keyof Led;
+      value: any;
+      leds: Led[];
+      setColorGroups?: boolean;
+    }
+  | {
+      type: "set-properties";
+      payload: Partial<Led>;
+      leds: Led[];
+      setColorGroups?: boolean;
+    }
   | { type: "set-leds"; ledMap: LedMap };
 
 type LedMap = { [id: number]: Led };
 
-function reducer(state: LedMap, action: Action): LedMap {
+const reducer = (state: LedMap, action: Action): LedMap => {
   switch (action.type) {
     case "add-led":
       if (!action.led) return { ...state };
@@ -20,24 +32,33 @@ function reducer(state: LedMap, action: Action): LedMap {
         ...state,
         [action.led.id]: action.led,
       };
-    case "set-property":
+    case "set-property": {
       if (!action.leds || !action.key) return { ...state };
 
-      return action.leds?.reduce(
+      let leds = action.leds?.reduce(
         (map: LedMap, led) => {
-          map[led.id] = { ...state[led.id], [action.key]: action.value };
+          map[led.id] = {
+            ...state[led.id],
+            [action.key]: action.value,
+          };
           return map;
         },
         { ...state }
       );
-    case "set-properties":
-      return action.leds?.reduce(
+
+      return action.setColorGroups ? setColorGroups(leds) : leds;
+    }
+
+    case "set-properties": {
+      let leds = action.leds?.reduce(
         (map: LedMap, led) => {
           map[led.id] = { ...state[led.id], ...action.payload };
           return map;
         },
         { ...state }
       );
+      return action.setColorGroups ? setColorGroups(leds) : leds;
+    }
     case "set-leds":
       return { ...state, ...action.ledMap };
   }
@@ -45,7 +66,6 @@ function reducer(state: LedMap, action: Action): LedMap {
 export const LedContainer = () => {
   const [leds, ledDispatch] = useReducer(reducer, {});
   const [ids, setIds] = useState<number[]>([]);
-  const [updateColorGroups, setUpdateColorGroups] = useState(false);
   const width = useWindowWidth();
 
   const wsRefs = useRef<{ [id: number]: WebSocket }>();
@@ -104,11 +124,11 @@ export const LedContainer = () => {
       payload: {
         override: false,
         colorGroup: null,
-        hex: newHex
+        hex: newHex,
       },
+      setColorGroups: true,
       leds: ledsToClose,
     });
-    setUpdateColorGroups(true);
     ledsToClose.forEach((led) => {
       if (wsRefs?.current && wsRefs.current[led.id]) {
         wsRefs.current[led.id].send(newHex);
@@ -138,8 +158,8 @@ export const LedContainer = () => {
             key: "hex",
             value: `#${("000000" + e.data.substring(1)).slice(-6)}`,
             leds: [led],
+            setColorGroups: true,
           });
-          setUpdateColorGroups(true);
         }
         if (e.data[0] === "b") {
           ledDispatch({
@@ -155,7 +175,6 @@ export const LedContainer = () => {
       };
       ws.onclose = () => {
         console.log(`Connection lost from ${led.name}`);
-        setIds((currentIds) => currentIds.filter((id) => id !== led.id));
       };
     });
     return () => {
@@ -165,28 +184,6 @@ export const LedContainer = () => {
       });
     };
   }, []);
-
-  useEffect(() => {
-    if (updateColorGroups) {
-      setUpdateColorGroups(false);
-
-      let newColors: string[] = [];
-      for (let i = 0; i < ids.length; i++) {
-        let led = leds[ids[i]];
-        if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
-      }
-
-      let newLeds: LedMap = {};
-      for (let i = 0; i < ids.length; i++) {
-        let led = leds[ids[i]];
-        newLeds[ids[i]] = {
-          ...led,
-          colorGroup: newColors.indexOf(led.hex),
-        };
-      }
-      ledDispatch({ type: "set-leds", ledMap: newLeds });
-    }
-  }, [leds, ids, updateColorGroups]);
 
   const getPickerData = (): Led[][] => {
     let overrideData: Led[][] = [];
@@ -206,13 +203,14 @@ export const LedContainer = () => {
     return overrideData.concat(colorGroupData).filter(Boolean);
   };
 
-  const divStyle = {
+  const spinnerStyle = {};
+  const style = {
     height: "100%",
     width: "100%",
   };
   let ledGroups = getPickerData();
   return (
-    <div style={divStyle}>
+    <div style={style}>
       {ledGroups.map((leds, index) => (
         <ColorPicker
           key={index}
@@ -226,6 +224,26 @@ export const LedContainer = () => {
           width={width}
         ></ColorPicker>
       ))}
+      <Spinner loading={!ledGroups || ledGroups.length === 0} color={"#fff"} />
     </div>
   );
+};
+
+const setColorGroups = (leds: LedMap): LedMap => {
+  let newColors: string[] = [];
+  let keys = Object.keys(leds);
+  for (let i = 0; i < keys.length; i++) {
+    let led = leds[parseInt(keys[i])];
+    if (newColors.indexOf(led.hex) === -1) newColors.push(led.hex);
+  }
+
+  let newLeds: LedMap = {};
+  for (let i = 0; i < keys.length; i++) {
+    let led = leds[parseInt(keys[i])];
+    newLeds[parseInt(keys[i])] = {
+      ...led,
+      colorGroup: newColors.indexOf(led.hex),
+    };
+  }
+  return newLeds;
 };
